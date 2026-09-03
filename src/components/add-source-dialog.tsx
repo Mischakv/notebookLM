@@ -133,9 +133,9 @@ export function AddSourceDialog({
               <Input ref={fileInput} type="file" accept=".pdf,.md,.markdown,.txt" required />
             ) : mode === "url" ? (
               <div className="space-y-2">
-                <Input name="url" type="url" required placeholder="https://www.amazon.de/…" />
+                <Input name="url" type="url" required placeholder="https://de.wikipedia.org/…" />
                 <p className="text-muted-foreground text-xs">
-                  Es können nur Seiten von amazon.de gelesen werden. Paywalls und Seiten,
+                  Es können nur Seiten von wikipedia.org gelesen werden. Paywalls und Seiten,
                   die ihren Inhalt per JavaScript nachladen, funktionieren nicht.
                 </p>
               </div>
