@@ -1,0 +1,77 @@
+# Applies migrations and deploys the embed function when the database half of the
+# repo changes. Vercel deploys the app itself through its own Git integration —
+# there is nothing to do here for the Next.js side.
+#
+# Required repository secrets:
+#   SUPABASE_ACCESS_TOKEN   Account > Access Tokens (a personal token, not a project key)
+#   SUPABASE_PROJECT_REF    The ref in your dashboard URL
+#   SUPABASE_DB_PASSWORD    The database password from project creation
+#
+# There is deliberately no `supabase link` step. Link can offer to reconcile the
+# local config.toml with the remote project, and this repo's config.toml holds
+# *local development* settings — a localhost site URL, a raised email rate limit.
+# Pushing those to a real project would break sign-in in a way that looks like an
+# auth bug. Passing --project-ref per command avoids the question entirely.
+#
+# NOTE: this pushes whatever is in supabase/migrations/. If the deployment runs
+# EMBEDDING_STRATEGY=external, 0004_embeddings_external.sql must be committed into
+# that directory — and applying it to a project with existing chunks fails on
+# purpose, because those vectors would be the wrong width.
+name: Supabase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/supabase.yml"
+  # Lets you re-run this from the Actions tab without pushing anything, which is
+  # the only way to test secrets without a commit per attempt.
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # An unset secret arrives as an empty string, and the CLI then reports
+      # "Cannot find project ref. Have you run supabase link?" — which sends you
+      # looking at the wrong thing. Say what is actually missing.
+      - name: Check the required secrets are present
+        run: |
+          missing=""
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || missing="$missing SUPABASE_ACCESS_TOKEN"
+          [ -n "$SUPABASE_PROJECT_REF" ]  || missing="$missing SUPABASE_PROJECT_REF"
+          [ -n "$SUPABASE_DB_PASSWORD" ]  || missing="$missing SUPABASE_DB_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing"
+            echo "Set them under Settings > Secrets and variables > Actions > Repository secrets."
+            echo "SUPABASE_PROJECT_REF is the 20-character ref alone (abcdefghijklmnopqrst),"
+            echo "not the project URL and not the dashboard URL."
+            exit 1
+          fi
+          case "$SUPABASE_PROJECT_REF" in
+            *[!a-z]*|"") echo "::error::SUPABASE_PROJECT_REF must be 20 lowercase letters, the ref alone — not a URL."; exit 1 ;;
+          esac
+
+      # --yes because `db push` asks for confirmation, and a prompt in CI is a hang.
+      - name: Apply migrations
+        run: |
+          supabase db push \
+            --project-ref "$SUPABASE_PROJECT_REF" \
+            --password "$SUPABASE_DB_PASSWORD" \
+            --yes
+
+      # --use-api bundles server-side instead of reaching for Docker on the runner.
+      # JWT verification stays on: the function is invoked with the caller's
+      # session and holds no key of its own.
+      - name: Deploy the embed function
+        run: supabase functions deploy embed --project-ref "$SUPABASE_PROJECT_REF" --use-api

@@ -1,0 +1,28 @@
+# The same gate AGENTS.md asks for before finishing, run on every push and PR.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # One command, the same one AGENTS.md and the reviewer role name. Spelling
+      # the steps out separately here is how CI and the documented gate drift apart.
+      - run: pnpm gate
+        env:
+          # The build imports the Supabase clients, which validate their config at
+          # module load. These are placeholders: nothing is contacted at build time,
+          # and the real values live in the deployment's environment.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder
