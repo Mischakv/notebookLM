@@ -18,13 +18,15 @@ const HTML_TYPES = ["text/html", "application/xhtml+xml"];
  * Only this domain may be fetched. A server-side fetcher that will retrieve any
  * address the user types is an SSRF primitive no matter how carefully the address
  * is vetted, so the reachable surface is pinned to the one domain this app is for.
- * Amazon's other storefronts and its amzn.to/amzn.eu shortlinks are deliberately
- * not listed: a shortlink can only resolve to a page the allowlist already covers.
+ * The subdomain rule below covers every language edition (de.wikipedia.org,
+ * en.wikipedia.org, …). The sibling Wikimedia projects — wiktionary.org,
+ * wikimedia.org, w.wiki shortlinks — are deliberately not listed: a shortlink can
+ * only resolve to a page the allowlist already covers.
  */
-const ALLOWED_DOMAINS = ["amazon.de"] as const;
+const ALLOWED_DOMAINS = ["wikipedia.org"] as const;
 
 /** Exact host or a subdomain of one. Deliberately not endsWith(domain):
- *  that would also accept "notamazon.de". */
+ *  that would also accept "notwikipedia.org". */
 export function isAllowedHost(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/\.$/, "");
   return ALLOWED_DOMAINS.some(
@@ -178,7 +180,7 @@ export async function assertFetchable(raw: string): Promise<URL> {
 
   // The address checked here can, in principle, change before fetch() connects
   // (DNS rebinding). That is not closed by pinning the resolved address, because
-  // the allowlist above already requires control of amazon.de's DNS to reach
+  // the allowlist above already requires control of wikipedia.org's DNS to reach
   // this point at all — an attacker in that position has no need to rebind.
   let addresses: { address: string }[];
   try {

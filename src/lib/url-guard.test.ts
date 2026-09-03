@@ -83,13 +83,13 @@ describe("isBlockedAddress", () => {
 
 describe("assertFetchable", () => {
   it("rejects a non-https scheme before any network call", async () => {
-    await expect(assertFetchable("http://www.amazon.de/")).rejects.toThrow(
+    await expect(assertFetchable("http://de.wikipedia.org/")).rejects.toThrow(
       "Nur https-Adressen werden unterstützt.",
     );
   });
 
   it("rejects credentials in the URL before any network call", async () => {
-    await expect(assertFetchable("https://user:pass@www.amazon.de/")).rejects.toThrow(
+    await expect(assertFetchable("https://user:pass@de.wikipedia.org/")).rejects.toThrow(
       "Adressen mit Zugangsdaten werden nicht unterstützt.",
     );
   });
@@ -105,24 +105,24 @@ describe("assertFetchable", () => {
 
 describe("isAllowedHost", () => {
   it("allows the domain itself and its subdomains", () => {
-    expect(isAllowedHost("amazon.de")).toBe(true);
-    expect(isAllowedHost("www.amazon.de")).toBe(true);
-    expect(isAllowedHost("m.amazon.de")).toBe(true);
-    expect(isAllowedHost("AMAZON.DE")).toBe(true);
-    expect(isAllowedHost("amazon.de.")).toBe(true);
+    expect(isAllowedHost("wikipedia.org")).toBe(true);
+    expect(isAllowedHost("de.wikipedia.org")).toBe(true);
+    expect(isAllowedHost("en.m.wikipedia.org")).toBe(true);
+    expect(isAllowedHost("DE.WIKIPEDIA.ORG")).toBe(true);
+    expect(isAllowedHost("de.wikipedia.org.")).toBe(true);
   });
 
   it("rejects lookalikes that merely end in the same letters", () => {
-    expect(isAllowedHost("notamazon.de")).toBe(false);
-    expect(isAllowedHost("myamazon.de")).toBe(false);
-    expect(isAllowedHost("amazon.de.evil.com")).toBe(false);
+    expect(isAllowedHost("notwikipedia.org")).toBe(false);
+    expect(isAllowedHost("mywikipedia.org")).toBe(false);
+    expect(isAllowedHost("wikipedia.org.evil.com")).toBe(false);
   });
 
-  it("rejects Amazon's other domains and shortlinks", () => {
-    expect(isAllowedHost("amazon.com")).toBe(false);
-    expect(isAllowedHost("amazon.co.uk")).toBe(false);
-    expect(isAllowedHost("amzn.to")).toBe(false);
-    expect(isAllowedHost("amzn.eu")).toBe(false);
+  it("rejects the sibling Wikimedia projects and shortlinks", () => {
+    expect(isAllowedHost("wikimedia.org")).toBe(false);
+    expect(isAllowedHost("de.wiktionary.org")).toBe(false);
+    expect(isAllowedHost("commons.wikimedia.org")).toBe(false);
+    expect(isAllowedHost("w.wiki")).toBe(false);
   });
 
   it("rejects unrelated hosts", () => {
