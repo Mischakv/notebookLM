@@ -1,0 +1,2 @@
+-- Intentionally empty. supabase/config.toml seeds from this path on `db reset`;
+-- the app has no fixture data, and auth users are created by signing in.
